@@ -1,0 +1,110 @@
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * @author ：huwuyang
+ * @date ：Created in 2020-05-27 14:30
+ * @description：
+ * @modified By：
+ */
+public class LRUCache<K,V> {
+    private Map<K, Note> map;
+    private Linked linked;
+    private int cacheSize;
+
+    public LRUCache(int capacity) {
+        this.cacheSize = capacity;
+        this.map = new HashMap(capacity);
+        this.linked = new Linked();
+    }
+
+    private class Linked {
+        private Note head;
+        private Note tail;
+
+        private Linked() {
+        }
+
+        private Note add(K key, V value) {
+            Note note = new Note(key, value);
+            if (head == null) {
+                tail = note;
+            } else {
+                Note h = head;
+                note.next = h;
+                h.prev = note;
+            }
+            head = note;
+            return note;
+        }
+
+        private K removeLast() {
+            K key = tail.key;
+            Note last = tail.prev;
+            last.next = null;
+            tail = last;
+            return key;
+        }
+
+        private void flashNote(Note note) {
+
+            Note p = note.prev;
+            Note n = note.next;
+            if (p == null) {
+                return;
+            }
+            if (n != null) {
+                n.prev = p;
+            }
+            if (p != null) {
+                p.next = n;
+            }
+            Note h = head;
+            note.prev = null;
+            note.next = h;
+            h.prev = note;
+            head = note;
+
+            if (n == null) {
+                tail = p;
+            }
+        }
+    }
+
+    private class Note {
+        private K key;
+        private V value;
+        private Note prev;
+        private Note next;
+
+        private Note(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    public V get(K key) {
+        Note note = map.get(key);
+        if (note != null) {
+            linked.flashNote(note);
+            return note.value;
+        }
+        return null;
+    }
+
+    public void put(K key, V value) {
+        Note note = map.get(key);
+        if (note == null) {
+            note = linked.add(key, value);
+        } else {
+            note.value = value;
+            linked.flashNote(note);
+        }
+        map.put(key, note);
+        if (map.size() > cacheSize) {
+            K k = linked.removeLast();
+            map.remove(k);
+        }
+    }
+}
